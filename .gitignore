@@ -1,1 +1,17 @@
 build/
+logs/
+CHANGES.txt
+LICENSE.txt
+NOTICE.txt
+README.txt
+bin/
+build.xml
+c++/
+contrib/
+docs/
+ivy.tar.gz
+ivy.xml
+ivy/
+lib/
+webapps/
+

@@ -351,6 +351,10 @@ public class JobConf extends Configuration {
         return get("keep.task.files.pattern");
     }
 
+    public String getDigestType() {
+        return get("security.digest.type", "SHA-1");
+    }
+    
     /**
      * Set the current working directory for the default file system.
      * 
@@ -379,15 +383,6 @@ public class JobConf extends Configuration {
                 throw new RuntimeException(e);
             }
         }
-    }
-
-    public boolean getUseZookeeper() {
-        return getBoolean("mapred.job.use.zookeeper", false);
-    }
-
-
-    public String getZookeeperAddress() {
-        return get("mapred.job.zookeeper.address", "127.0.0.1:2181");
     }
 
     /**
