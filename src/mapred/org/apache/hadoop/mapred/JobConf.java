@@ -958,6 +958,22 @@ public class JobConf extends Configuration {
         return getBoolean("mapred.map.tasks.force.kill.execution", false);
     }
 
+    public boolean getRunSpecificTask() { 
+        return getBoolean("mapred.map.tasks.specific.task", true);
+    }
+
+    public void setTaskNumber(int task) { 
+        setInt("mapred.map.tasks.task.number", task);
+    }
+
+    public int getTaskNumber() { 
+        return getInt("mapred.map.tasks.task.number", -1);
+    }
+
+    public void setRunSpecificTask(boolean value) { 
+        setBoolean("mapred.map.tasks.specific.task", value);
+    }
+
     public boolean getDeferredExecution() { 
         return getBoolean("mapred.map.tasks.deferred.execution", true);
     }

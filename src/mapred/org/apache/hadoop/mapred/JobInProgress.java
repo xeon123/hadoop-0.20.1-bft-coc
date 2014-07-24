@@ -632,36 +632,52 @@ class JobInProgress {
         
         maps = new TaskInProgress[replicatedNumMapTasks];
 
-        if(conf.getDeferredExecution()) {
-            LOG.debug("Deferred execution enabled");
+        if (conf.getRunSpecificTask()) { // when it is necessary to launch just one int task
+            int task_number = conf.getTaskNumber();
+            inputLength = splits[task_number].getDataLength();
 
-            for(int i=0; i < splits.length; ++i) {
-                inputLength += splits[i].getDataLength();
+            int i = task_number;
+            int j = numReplicas -1;
+            // always consider the new extra task, as the second replica
+            int idx = (i*numReplicas) + j;
+            //task_201007081056_0001_m_000002_2_m 
+            //task_201007081056_0001_m_idx_replica_m 
+            maps[idx] = new TaskInProgress(jobId, jobFile, splits[i], jobtracker, conf, this, i, j);
 
-                for(int j=0; j<numReplicas; j++) {
-                    int idx = (i*numReplicas) + j;
-                    //task_201007081056_0001_m_000002_2_m 
-                    //task_201007081056_0001_m_idx_replica_m 
-                    maps[idx] = new TaskInProgress(jobId, jobFile, splits[i], jobtracker, conf, this, i, j);
-
-                    // set count
-                    increaseCount(mapCount, maps[idx].getTIPId().toStringWithoutReplica());
-                }
-            }
+            // set count
+            increaseCount(mapCount, maps[idx].getTIPId().toStringWithoutReplica());
         } else {
-            LOG.debug("Tentative execution enabled");
-            int count=0;
-            for(int numReplica=0; numReplica<numReplicas; numReplica++) {
+            if(conf.getDeferredExecution()) {
+                LOG.debug("Deferred execution enabled");
+
                 for(int i=0; i < splits.length; ++i) {
                     inputLength += splits[i].getDataLength();
 
-                    //task_201007081056_0001_m_000002_2_m 
-                    //task_201007081056_0001_m_idx_replica_m 
-                    maps[count] = new TaskInProgress(jobId, jobFile, splits[i], jobtracker, conf, this, i, numReplica);
+                    for(int j=0; j<numReplicas; j++) {
+                        int idx = (i*numReplicas) + j;
+                        //task_201007081056_0001_m_000002_2_m 
+                        //task_201007081056_0001_m_idx_replica_m 
+                        maps[idx] = new TaskInProgress(jobId, jobFile, splits[i], jobtracker, conf, this, i, j);
 
-                    // set count
-                    increaseCount(mapCount, maps[count].getTIPId().toStringWithoutReplica());
-                    count++;
+                        // set count
+                        increaseCount(mapCount, maps[idx].getTIPId().toStringWithoutReplica());
+                    }
+                }
+            } else {
+                LOG.debug("Tentative execution enabled");
+                int count=0;
+                for(int numReplica=0; numReplica<numReplicas; numReplica++) {
+                    for(int i=0; i < splits.length; ++i) {
+                        inputLength += splits[i].getDataLength();
+
+                        //task_201007081056_0001_m_000002_2_m 
+                        //task_201007081056_0001_m_idx_replica_m 
+                        maps[count] = new TaskInProgress(jobId, jobFile, splits[i], jobtracker, conf, this, i, numReplica);
+
+                        // set count
+                        increaseCount(mapCount, maps[count].getTIPId().toStringWithoutReplica());
+                        count++;
+                    }
                 }
             }
         }
