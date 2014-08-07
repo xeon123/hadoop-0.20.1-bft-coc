@@ -959,7 +959,7 @@ public class JobConf extends Configuration {
     }
 
     public boolean getRunSpecificTask() { 
-        return getBoolean("mapred.map.tasks.specific.task", true);
+        return getBoolean("mapred.map.tasks.specific.task", false);
     }
 
     public void setTaskNumber(int task) { 

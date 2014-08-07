@@ -519,31 +519,14 @@ class JobInProgress {
             }
         }
 
-        if(conf.getMapTasksOrdered())
-            LOG.debug("ORDERED");
-        else
-            LOG.debug("NO ORDERED");
-
-        if(conf.getMapTasksOrdered()) {
-            Iterator<Node> iter = cache.keySet().iterator();
-            while(iter.hasNext()) {
-                Node n = iter.next();
-                List<TaskInProgress> hostMaps = cache.get(n);
-                Collections.sort (hostMaps, new Comparator<TaskInProgress>() {  
-                    public int compare(TaskInProgress p1, TaskInProgress p2) {  
-                        return p1.getTIPId().getReplicaNumber() < p2.getTIPId().getReplicaNumber() ? -1 : 
-                            (p1.getTIPId().getReplicaNumber() > p2.getTIPId().getReplicaNumber() ? 1 : 0);  
-                    }  
-                });
-            }
-        }
-
-        if(LOG.isDebugEnabled())
-            printCache( cache);
-
         return cache;
     }
 
+    /**
+     * 
+     * @param cache
+     * @deprecated
+     */
     private void printCache(Map<Node, List<TaskInProgress>> cache) {
         Iterator<Node> node = cache.keySet().iterator();
         StringBuffer res = new StringBuffer("Cache --------\n");
@@ -686,10 +669,15 @@ class JobInProgress {
 
         if (numMapTasks > 0) { 
             nonRunningMapCache = createCache(splits, maxLevel);
+            
+            if(conf.getMapTasksOrdered() && !conf.getRunSpecificTask()) {
+                sortTasksByReplica(nonRunningMapCache);
+            }
         }
 
         // Print the map cache
-        printMapCache();
+        if(LOG.isDebugEnabled())
+        	printMapCache();
 
         // set the launch time
         this.launchTime = System.currentTimeMillis();
@@ -756,6 +744,24 @@ class JobInProgress {
         endProcess.start();
     }
 
+    /**
+     * Sort the taskInProgress by the replica number 
+     * @param cache
+     */
+	private void sortTasksByReplica(Map<Node, List<TaskInProgress>> cache) {
+		Iterator<Node> iter = cache.keySet().iterator();
+		while(iter.hasNext()) {
+		    Node n = iter.next();
+		    List<TaskInProgress> hostMaps = cache.get(n);
+		    Collections.sort (hostMaps, new Comparator<TaskInProgress>() {  
+		        public int compare(TaskInProgress p1, TaskInProgress p2) {  
+		            return p1.getTIPId().getReplicaNumber() < p2.getTIPId().getReplicaNumber() ? -1 : 
+		                (p1.getTIPId().getReplicaNumber() > p2.getTIPId().getReplicaNumber() ? 1 : 0);  
+		        }  
+		    });
+		}
+	}
+
     private void printMapCache() {
         /*
           Map cache
@@ -773,7 +779,10 @@ class JobInProgress {
             List<TaskInProgress> auxtip = nonRunningMapCache.get(n);
             StringBuffer t = new StringBuffer();
             for(TaskInProgress tip : auxtip) {
-                t.append(tip.getTIPId().toString() + ", ");
+            	if (tip == null)
+            		t.append("null, ");
+            	else
+            		t.append(tip.getTIPId().toString() + ", ");
             }
             buf.append("\t" + n + " - " + t + "\n");
         }
