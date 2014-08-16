@@ -1527,6 +1527,24 @@ public class JobConf extends Configuration {
     }
 
     /**
+     * Get python proxy address
+     * @return
+     */
+    public String getProxyAddress() {
+    	return get("hadoop.proxy.address");
+    }
+    
+    /**
+     * In case of task failure, they can re-start again locally, or remotely
+     * By default, when a task fail, they can only re-start one time locally. 
+     * The next time, will be in another cloud.
+     * @return
+     */
+    public boolean getRelaunchTasksLocally() {
+    	return getBoolean("mapred.tasks.relaunch.locally", true);
+	}
+    
+    /**
      * Set the uri to be invoked in-order to send a notification after the job
      * has completed (success/failure).
      * 

@@ -55,6 +55,7 @@ import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.net.NetworkTopology;
 import org.apache.hadoop.net.Node;
 import org.apache.hadoop.util.StringUtils;
+import org.json.simple.JSONObject;
 
 /*************************************************************
  * JobInProgress maintains all the info for keeping
@@ -118,6 +119,9 @@ class JobInProgress {
     private int finishedReduceTasks = 0;
     private int failedMapTasks 		= 0; 
     private int failedReduceTasks 	= 0;
+    
+    private boolean relaunchMapTaskLocally;
+    private boolean relaunchReduceTaskLocally;
 
     //    private static final float DEFAULT_COMPLETED_MAPS_PERCENT_FOR_REDUCE_SLOWSTART = 0.05f;
     //    int completedMapsForReduceSlowstart = 0;
@@ -598,6 +602,9 @@ class JobInProgress {
             splitFile.close();
         }
 
+        this.relaunchMapTaskLocally = conf.getRelaunchTaskLocally();
+        this.relaunchReduceTaskLocally = conf.getRelaunchTaskLocally();
+        
         // numMapTasks be enough
         this.numMapTasks = splits.length;
         this.replicatedNumMapTasks = numMapTasks * numReplicas;
@@ -2651,9 +2658,15 @@ class JobInProgress {
             finishedMapTasks += 1;
 
             mapTaskCompletionEventTracker[taskid.getTaskID().getId()]++;
+            
             // if it's deferred execution, check if there is some taskcompletionevent to run 
             if(conf.getDeferredExecution()) {
-                executionDecision(taskid.getTaskID());
+            	// TODO
+            	// check if we got a majority of correct results
+            	while (executionDecision(taskid.getTaskID()) != MajorityVoting.MAJORITY) {
+            		relaunchMapTask();
+            		relaunchMapTaskLocally = false;
+				}
             } else {
                 List<TaskCompletionEvent> events = voting.getTaskCompletionEvent(taskid.getTaskID());
 
@@ -2672,15 +2685,18 @@ class JobInProgress {
                         voting.addFirst(event);
                         voting.addFirstHash(tip.getTIPId(), status.getDigests());
                     } else {
-                        int maj = executionDecision(taskid.getTaskID());
-
+                        // TODO
+                        while (executionDecision(taskid.getTaskID()) != MajorityVoting.MAJORITY) {
+                    		relaunchMapTask();
+                    		relaunchMapTaskLocally = false;
+        				}
+                        
+                        // we got majority
                         String[] digest = voting.getFirstHash(taskid.getTaskID());
-                        if(maj == MajorityVoting.MAJORITY) {
-                            if(!voting.digestsEquals(status.getDigests(), digest)) {
-                                // relaunch all reduce tasks finished
-                                relaunchReduceTask();
-
-                            }
+                        
+                        if(!voting.digestsEquals(status.getDigests(), digest)) {
+                            // relaunch all reduce tasks finished
+                            relaunchReduceTask();
                         }
                     }
 
@@ -2783,16 +2799,38 @@ class JobInProgress {
         }
         // this is in the case, the digests of the map tasks aren't equals, there's the need to execute more tasks
         else if(maj == MajorityVoting.NO_MAJORITY) {
-            TaskCounter sumtaskcounter = summapTaskcounter;
-            int count = sumtaskcounter.getCount(taskid.getId());
-
-            if(count == numReplicas) {// no more replicas can be launched
-                LOG.error(taskid.toString() + " didn't produced a majority of digests. All job will fail.");
-                fail();
-            }
-            else {
-                mapTaskcounter.removetask(taskid.getId());// register the task that failed
-            }
+        	JSONObject json = voting.jsonfy(jobId.toString(), true);
+        	
+        	String proxyAddress = conf.getProxyAddress();
+        	String response = Proxy.sendDigestToProxy(proxyAddress, json.toJSONString());
+        	
+        	if(relaunchMapTaskLocally) { // only relaunch task locally for the first time
+        		relaunchMapTaskLocally = false;
+	            TaskCounter sumtaskcounter = summapTaskcounter;
+	            mapTaskcounter.removetask(taskid.getId());// register the task that failed
+        	} else {// relaunch task in another cloud
+        		// TODO
+        		// get failed task
+        		String json = voting.jsonfyFailedTasks(jobId.toString(), true);
+        		
+        		// send order to the proxy
+        		Proxy.relaunchJobInAnotherCloud(address, json);
+        		
+        		
+        		// wait for an answer
+        		while(!answer) {
+        			Thread.sleep(4000);
+        		}
+        		
+        		// answer contains the task id and the generated digest
+        		answer = getResult();
+        		
+        		// add has to task id
+        		
+        		
+        		// see if we have majority of values
+        		
+        	}
         }
 
         return maj;
@@ -3701,4 +3739,17 @@ class JobInProgress {
     public void addTamperedReduce() {
         this.tamperedReduce++;
     }
+    
+    /**
+     * 
+     * @param jobId
+     * @param failedMapTasks List of failed map tasks
+     */
+    public void relaunchMapTask(String jobId, String failedMapTasks) {
+    	// TODO
+    	jobId.toString();
+    	
+    	Proxy.sendFailedTasksToProxy(url, jsondata);
+		
+	}
 }

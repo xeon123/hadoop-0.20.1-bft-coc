@@ -1,6 +1,9 @@
 package org.apache.hadoop.mapred;
 
 import java.util.List;
+import java.util.Map;
+
+import org.json.simple.JSONObject;
 
 public interface VotingSystem {
 	/**
@@ -136,4 +139,20 @@ public interface VotingSystem {
 	 * @return
 	 */
 	public List<TaskID> getTask(TaskID tid);
+	
+	/**
+	 * Return a json message with map or reduce digests 
+	 * @param jobid id of the job
+	 * @param isMap is it map or reduce tasks
+	 * @return JSONObect with all digests
+	 */
+	public JSONObject jsonfy(String jobid, boolean isMap);
+	
+	/**
+	 * Return a json message with failed tasks 
+	 * @param jobid id of the job
+	 * @param isMap is it map or reduce tasks
+	 * @return JSONObect with all digests
+	 */
+	public JSONObject jsonfyFailedTasks(String jobid, boolean isMap);
 }

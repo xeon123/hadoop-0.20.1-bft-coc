@@ -114,11 +114,6 @@ public class MajorityVoting implements VotingSystem {
 		 }
 	 }
 
-	 public void sendDigests(){
-
-
-	 }
-
 	 public void addFirstHash(TaskID tid, String[] values) {
 		 if(tid == null || values == null)
 			 return;
@@ -466,13 +461,27 @@ public class MajorityVoting implements VotingSystem {
 		  return tasks * ((replica * 2) +1);
 	  }
 
-	  public JSONObject jsonfy(String jobid, Map<String, List<String>> hashmap, boolean isMap) {
+	  private JSONObject jsonfy(String jobid, Map<String, List<String>> digests, boolean isMap) {
 		  JSONObject obj=new JSONObject();
 		  
 		  obj.put("jobid",jobid);
 		  obj.put("isMap", "" + isMap);
-		  obj.putAll(hashmap);
+		  obj.putAll(digests);
 		  
 		  return obj;
 	  }
+	  
+	  public JSONObject jsonfy(String jobid, boolean isMap) {
+		  return jsonfy(jobid, mapHashList, isMap);
+	  }
+	  
+	  public JSONObject jsonfyFailedTasks(String jobid, boolean isMap) {
+		  if(isMap) {
+			  // get failed map tasks  
+		  } else {
+			  // nothing
+		  }
+		  
+		  return jsonfy(jobid, failedTasks, isMap);
+	}
 }
