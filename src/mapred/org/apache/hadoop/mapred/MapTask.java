@@ -61,6 +61,8 @@ import org.apache.hadoop.io.serializer.SerializationFactory;
 import org.apache.hadoop.io.serializer.Serializer;
 import org.apache.hadoop.mapred.IFile.Writer;
 import org.apache.hadoop.mapred.Merger.Segment;
+import org.apache.hadoop.mapred.bft.*;
+import org.apache.hadoop.mapred.security.*;
 import org.apache.hadoop.mapred.SortedRanges.SkipRangeIterator;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.util.IndexedSortable;
@@ -1378,7 +1380,7 @@ class MapTask extends Task {
 		}
 
 		/**
-		 * Generate hash SHA-1
+		 * Generate hash SHA
 		 * @param path
 		 * @param mapOutputLength
 		 * @return
@@ -1411,8 +1413,6 @@ class MapTask extends Task {
 			}
 
 			if(umbilical.shouldTamper(getTaskID(), TAMPERDIGEST)) {
-				int replicatedTasks = MajorityVoting.getNrReplicatedTasks(conf.getNumMapTasks(), conf.getFaultTolerance());
-
 				if(BFTInjector.tamperingDigests(hashList))
 					LOG.debug(getTaskID().getTaskID().toString() + " has digests tampered.");
 			}

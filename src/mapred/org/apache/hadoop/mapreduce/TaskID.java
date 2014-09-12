@@ -89,10 +89,7 @@ public class TaskID extends org.apache.hadoop.mapreduce.ID {
 		this.isMap = isMap;
 		this.numReplica = numReplica;
 	}
-
-	public int getReplicaNumber() {
-		return numReplica;
-	}
+	
 	/**
 	 * Constructs a TaskID object from given {@link JobID}. 
 	 * TO be used only for the reducer side
@@ -134,6 +131,10 @@ public class TaskID extends org.apache.hadoop.mapreduce.ID {
 		return jobId;
 	}
 
+	public int getReplicaNumber() {
+		return numReplica;
+	}
+	
 	/**Returns whether this TaskID is a map ID */
 	public boolean isMap() {
 		return isMap;
